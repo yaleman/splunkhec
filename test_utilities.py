@@ -2,8 +2,8 @@
 
 """ test harnesses for splunkhec.utilities """
 
-import pytest
 import uuid
+import pytest
 import splunkhec.utilities
 
 def test_validate_token_format_valid():
@@ -23,20 +23,29 @@ def test_validate_token_format_invalid2():
     with pytest.raises(ValueError):
         splunkhec.utilities.validate_token_format(guid)
 
+##############################################
+# testing splunkhec.makeuri
+
+
 def test_make_uri_valid_secure():
     """ tests a kinda valid result """
     server = 'example.com:8088'
     secure = True
     endpoint = '/event/collector/health'
-    assert splunkhec.utilities.make_uri(server=server, endpoint=endpoint, secure=secure) == 'https://example.com:8088/event/collector/health'
+    assert splunkhec.make_uri(server=server,
+                              endpoint=endpoint,
+                              secure=secure
+                             ) == 'https://example.com:8088/event/collector/health'
 
 def test_make_uri_valid_insecure():
     """ tests a valid result """
     server = 'example.com:8088'
     secure = False
     endpoint = '/event/collector/health'
-    assert splunkhec.utilities.make_uri(server=server, endpoint=endpoint, secure=secure) == 'http://example.com:8088/event/collector/health'
-
+    assert splunkhec.make_uri(server=server,
+                              endpoint=endpoint,
+                              secure=secure,
+                              ) == 'http://example.com:8088/event/collector/health'
 
 def test_make_uri_make_insecure():
     """ tests a kinda valid result """
@@ -44,7 +53,7 @@ def test_make_uri_make_insecure():
     secure = False
     endpoint = '/event/collector/health'
     with pytest.raises(ValueError):
-        splunkhec.utilities.make_uri(server=server, endpoint=endpoint, secure=secure)
+        splunkhec.make_uri(server=server, endpoint=endpoint, secure=secure)
 
 
 def test_make_uri_443_http():
@@ -53,7 +62,7 @@ def test_make_uri_443_http():
     secure = False
     endpoint = '/event/collector/health'
     with pytest.raises(ValueError):
-        splunkhec.utilities.make_uri(server=server, endpoint=endpoint, secure=secure)
+        splunkhec.make_uri(server=server, endpoint=endpoint, secure=secure)
 
 def test_make_uri_http_443():
     """ tests a kinda valid result """
@@ -61,4 +70,7 @@ def test_make_uri_http_443():
     secure = False
     endpoint = '/event/collector/health'
     with pytest.raises(ValueError):
-        splunkhec.utilities.make_uri(server=server, endpoint=endpoint, secure=secure)
+        splunkhec.make_uri(server=server, endpoint=endpoint, secure=secure)
+
+##############################################
+# more tests?
