@@ -1,4 +1,5 @@
 import requests
+import time
 # dirty little logger for pushing from loguru to splunk HEC
 
 class SplunkLogger(object):
@@ -41,8 +42,13 @@ logger.add(splunklogger.splunk_logger)
 
     def splunk_logger(self, event_text):
         """ makes a callable for loguru to send to splunk """
-        self.send_single_event(event=event_text.strip(),
-                               index=self.index_name,
-                               sourcetype=self.sourcetype,
-                              )
+        try:
+            self.send_single_event(event=event_text.strip(),
+                                   index=self.index_name,
+                                   sourcetype=self.sourcetype,
+                                  )
+        except Exception as error_message:
+            print(f"Failed to send, error: {error_message}")
+            time.sleep(5)
+            self.splunk_logger(event_text)
         return True
