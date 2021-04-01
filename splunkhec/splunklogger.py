@@ -1,8 +1,17 @@
-import requests
-import time
-# dirty little logger for pushing from loguru to splunk HEC
+#!python3
+""" dirty little logger for pushing from loguru to splunk HEC """
 
-class SplunkLogger(object):
+from os import getenv
+import time
+import sys
+
+try:
+    import requests
+except ImportError as error_message:
+    sys.exit(f"Couldn't import requests, python3 -m pip install requests would be handy. Error: {error_message}") #pylint: disable=line-too-long
+
+class SplunkLogger():
+    """ this can help you to log directly to splunk HEC """
     def __init__(self,
                  endpoint: str,
                  token: str,
@@ -47,8 +56,37 @@ logger.add(splunklogger.splunk_logger)
                                    index=self.index_name,
                                    sourcetype=self.sourcetype,
                                   )
-        except Exception as error_message:
+        # TODO: work out what exceptions to catch.. there's probably a lot.
+        except Exception as error_message: # pylint: disable=broad-except
             print(f"Failed to send, error: {error_message}")
             time.sleep(5)
             self.splunk_logger(event_text)
         return True
+
+def setup_logging(logger_object, debug: bool,
+                    level_ljust: None,
+                    use_default_loguru: bool=True,
+                    ) -> None:
+    """ does logging configuration
+        makes it quieter if you set use_default_loguru to false
+            - handy for shell scripts where you're using loguru to be pretty
+                but maybe not with all the debugging stuff
+    """
+    # use the one from the environment, where possible
+    loguru_level=getenv('LOGURU_LEVEL', 'INFO')
+    if debug:
+        loguru_level='DEBUG'
+    else:
+        if not use_default_loguru:
+            loguru_format = '<level>{message}</level>'
+
+    if level_ljust:
+        loguru_format = loguru_format.replace('{level}', '{level<'+level_ljust+'}')
+
+    logger_object.remove()
+    logger_object.add(sys.stdout, format=loguru_format, level=loguru_level)
+
+
+if __name__ == '__main__':
+    print("This should not be used as a script", file=sys.stderr)
+    sys.exit(1)
