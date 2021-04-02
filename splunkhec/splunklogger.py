@@ -8,7 +8,13 @@ import sys
 try:
     import requests
 except ImportError as error_message:
-    sys.exit(f"Couldn't import requests, python3 -m pip install requests would be handy. Error: {error_message}") #pylint: disable=line-too-long
+    sys.exit(f"Couldn't import requests, `python3 -m pip install requests` would be handy. Error: {error_message}") #pylint: disable=line-too-long
+
+try:
+    from loguru._defaults import LOGURU_FORMAT
+except ImportError as error_message:
+    sys.exit(f"Couldn't import loguru, `python3 -m pip install loguru` would be handy. Error: {error_message}") #pylint: disable=line-too-long
+
 
 class SplunkLogger():
     """ this can help you to log directly to splunk HEC """
@@ -64,28 +70,33 @@ logger.add(splunklogger.splunk_logger)
         return True
 
 def setup_logging(logger_object, debug: bool,
-                    level_ljust: None,
+                    level_ljust=None,
                     use_default_loguru: bool=True,
+                    log_sink=sys.stderr,
                     ) -> None:
     """ does logging configuration
-        makes it quieter if you set use_default_loguru to false
-            - handy for shell scripts where you're using loguru to be pretty
-                but maybe not with all the debugging stuff
+        set use_default_loguru to false to make the format a bit quieter
+            - handy for shell scripts where you're using loguru to be pretty, but maybe not with all the debugging stuff
+        default logs to stderr, just like loguru https://github.com/Delgan/loguru/blob/master/loguru/_logger.py#L197
     """
     # use the one from the environment, where possible
     loguru_level=getenv('LOGURU_LEVEL', 'INFO')
+    loguru_format = LOGURU_FORMAT
+
     if debug:
         loguru_level='DEBUG'
-    else:
-        if not use_default_loguru:
-            loguru_format = '<level>{message}</level>'
+    elif not use_default_loguru:
+        loguru_format = '<level>{message}</level>'
 
     if level_ljust:
-        loguru_format = loguru_format.replace('{level}', '{level<'+level_ljust+'}')
+        # TODO: I hate this string concatenation, but fstrings...
+        loguru_format = loguru_format.replace('{level}', '{level: <'+level_ljust+'}')
 
     logger_object.remove()
-    logger_object.add(sys.stdout, format=loguru_format, level=loguru_level)
-
+    logger_object.add(sink=log_sink,
+                      format=loguru_format,
+                      level=loguru_level,
+                      )
 
 if __name__ == '__main__':
     print("This should not be used as a script", file=sys.stderr)
