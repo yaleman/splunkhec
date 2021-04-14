@@ -69,7 +69,7 @@ logger.add(splunklogger.splunk_logger)
             self.splunk_logger(event_text)
         return True
 
-def setup_logging(logger_object, debug: bool,
+def setup_logging(logger_object, debug: bool=True,
                     level_ljust=None,
                     use_default_loguru: bool=True,
                     log_sink=sys.stderr,
@@ -78,6 +78,16 @@ def setup_logging(logger_object, debug: bool,
         set use_default_loguru to false to make the format a bit quieter
             - handy for shell scripts where you're using loguru to be pretty, but maybe not with all the debugging stuff
         default logs to stderr, just like loguru https://github.com/Delgan/loguru/blob/master/loguru/_logger.py#L197
+
+        example usage:
+        splunklogger = SplunkLogger(endpoint=f"https://{SPLUNK_HEC_HOST}/services/collector",
+                                    token=SPLUNK_HEC_TOKEN,
+                                    sourcetype=SPLUNK_SOURCETYPE,
+                                    index_name=SPLUNK_INDEX,
+                                    )
+        setup_logging(logger_object=logger,
+                      log_sink=splunklogger.splunk_logger,
+                      )
     """
     # use the one from the environment, where possible
     loguru_level=getenv('LOGURU_LEVEL', 'INFO')
