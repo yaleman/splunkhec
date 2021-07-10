@@ -38,6 +38,7 @@ logger.add(splunklogger.splunk_logger)
         self.token = token
         self.sourcetype = sourcetype
         self.index_name = index_name
+        self.event_formatter = self.default_event_formatter
 
     def send_single_event(self,
                           **kwargs,
@@ -55,8 +56,14 @@ logger.add(splunklogger.splunk_logger)
         req.raise_for_status()
         return req
 
+    def default_event_formatter(self, event_text):
+        """ this is a default passthrough to allow for text formatting
+            to override this set self.event_formatter """
+        return event_text
+
     def splunk_logger(self, event_text):
         """ makes a callable for loguru to send to splunk """
+        event_text = self.event_formatter(event_text)
         try:
             self.send_single_event(event=event_text.strip(),
                                    index=self.index_name,
