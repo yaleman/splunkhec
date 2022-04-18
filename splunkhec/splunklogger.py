@@ -47,7 +47,7 @@ logger.add(splunklogger.splunk_logger)
         if 'event' not in kwargs:
             raise ValueError("need to have at least an event value")
         headers = {
-            'Authorization' : 'Splunk {}'.format(self.token)
+            'Authorization' : f'Splunk {self.token}'
         }
         payload = kwargs
         if not isinstance(payload['event'], str):
@@ -56,7 +56,8 @@ logger.add(splunklogger.splunk_logger)
         req.raise_for_status()
         return req
 
-    def default_event_formatter(self, event_text):
+    @classmethod
+    def default_event_formatter(cls, event_text):
         """ this is a default passthrough to allow for text formatting
             to override this set self.event_formatter """
         return event_text
@@ -70,8 +71,8 @@ logger.add(splunklogger.splunk_logger)
                                    sourcetype=self.sourcetype,
                                   )
         # TODO: work out what exceptions to catch.. there's probably a lot.
-        except Exception as error_message: # pylint: disable=broad-except
-            print(f"Failed to send, error: {error_message}")
+        except Exception as log_error: # pylint: disable=broad-except
+            print(f"Failed to send, error: {log_error}")
             time.sleep(5)
             self.splunk_logger(event_text)
         return True
