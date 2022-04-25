@@ -26,5 +26,5 @@ def test_splunklogger() -> None:
     logger.warning("warning")
     logger.error("error")
 
+    # pylint: disable=line-too-long
     print(f"Logs are likely available at: https://{testconfig.SERVER}/app/search/search/?q=search%20index%3Dtest%20sourcetype%3Dsplunklogger_test&display.page.search.mode=fast&earliest=-15m%40m&latest=now")
-
