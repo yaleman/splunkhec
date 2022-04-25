@@ -2,14 +2,18 @@
 """ tests the health endpoint """
 
 import re
-#import pytest
+import sys
 from uuid import uuid4
 
 from loguru import logger
+import pytest
 import requests_mock
 from splunkhec import splunkhec
 
-import testconfig
+try:
+    import testconfig
+except ImportError:
+    pytest.skip(allow_module_level=True)
 
 URLMATCHER = re.compile('.*')
 
