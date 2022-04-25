@@ -2,7 +2,6 @@
 """ tests the health endpoint """
 
 import re
-import sys
 from uuid import uuid4
 
 from loguru import logger
@@ -11,13 +10,13 @@ import requests_mock
 from splunkhec import splunkhec
 
 try:
-    import testconfig
+    import testconfig # type: ignore
 except ImportError:
     pytest.skip(allow_module_level=True)
 
 URLMATCHER = re.compile('.*')
 
-def test_is_healthy_200():
+def test_is_healthy_200() -> None:
     """ tests a working one """
     expected_response = '{"text":"HEC is healthy","code":17}'
     with requests_mock.mock() as mock:
@@ -25,7 +24,7 @@ def test_is_healthy_200():
         mock.post(URLMATCHER, text=expected_response, status_code=200)
         assert hec.send_test_event()
 
-def test_is_healthy_503():
+def test_is_healthy_503() -> None:
     """ tests an endpoint returning 503 """
     expected_response = '{"text":"HEC is healthy","code":17}'
     with requests_mock.mock() as mock:
@@ -34,7 +33,7 @@ def test_is_healthy_503():
         assert not hec.send_test_event()
 
 
-def test_is_healthy_400():
+def test_is_healthy_400() -> None:
     """ tests an endpoint returning 400 """
     expected_response = '{"text":"HEC is healthy","code":17}'
     with requests_mock.mock() as mock:
@@ -43,5 +42,5 @@ def test_is_healthy_400():
         assert not hec.send_test_event()
 
 if __name__ == '__main__':
-    testhec = splunkhec(testconfig.SERVER)
-    logger.debug(testhec.send_test_event(token=testconfig.TESTTOKEN))
+    testhec = splunkhec(testconfig.SERVER, token=testconfig.TESTTOKEN)
+    logger.debug(testhec.send_test_event())

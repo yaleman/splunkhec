@@ -8,18 +8,18 @@ from splunkhec.splunklogger import SplunkLogger
 
 
 try:
-    import testconfig
+    import testconfig # type: ignore
 except ImportError:
     pytest.skip(allow_module_level=True)
 
 
-def test_splunklogger():
+def test_splunklogger() -> None:
     """ does some really quick tests """
     splunklogger = SplunkLogger(endpoint=f"https://{testconfig.SERVER}/services/collector",
                                 token=testconfig.TOKEN,
                                 sourcetype="splunklogger_test",
                                 index_name="test")
-    logger.add(splunklogger.splunk_logger)
+    logger.add(str(splunklogger.splunk_logger))
 
     logger.debug("debug")
     logger.info("info")

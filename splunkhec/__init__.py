@@ -123,7 +123,12 @@ class splunkhec():
         based on examples here:
         https://docs.splunk.com/Documentation/Splunk/latest/Data/HECExamples
         """
-    def __init__(self, server: str, **kwargs: Dict[str, Any]):
+    def __init__(
+        self,
+        server: str,
+        token: Optional[str] = None,
+        **kwargs: Dict[str, Any],
+        ) -> None:
         """ start up the jam
             expected variables
             - server (either the full hostname/port or just the hostname - eg https://example.com:8088 or example.com or example.com:8088)
@@ -133,8 +138,8 @@ class splunkhec():
             - secure (bool: use https if true)
             - verbose (bool: how noisy to be)
         """
-        if "token" in kwargs:
-            token = str(kwargs['token'])
+        if token is not None:
+            token = token
             if validate_token_format(token):
                 self.token =token
         self.server = server
