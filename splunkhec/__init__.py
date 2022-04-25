@@ -139,7 +139,6 @@ class splunkhec():
             - verbose (bool: how noisy to be)
         """
         if token is not None:
-            token = token
             if validate_token_format(token):
                 self.token =token
         self.server = server
