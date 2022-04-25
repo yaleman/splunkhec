@@ -3,6 +3,7 @@
 
 from os import getenv
 import time
+from typing import Any, Optional
 import sys
 
 try:
@@ -41,8 +42,8 @@ logger.add(splunklogger.splunk_logger)
         self.event_formatter = self.default_event_formatter
 
     def send_single_event(self,
-                          **kwargs,
-                          ):
+                          **kwargs: Any,
+                          ) -> requests.Response:
         """ pass it the endpoint, token and a string, and it'll submit the event """
         if 'event' not in kwargs:
             raise ValueError("need to have at least an event value")
@@ -57,12 +58,12 @@ logger.add(splunklogger.splunk_logger)
         return req
 
     @classmethod
-    def default_event_formatter(cls, event_text):
+    def default_event_formatter(cls, event_text: str) -> str:
         """ this is a default passthrough to allow for text formatting
             to override this set self.event_formatter """
         return event_text
 
-    def splunk_logger(self, event_text):
+    def splunk_logger(self, event_text: str) -> bool:
         """ makes a callable for loguru to send to splunk """
         event_text = self.event_formatter(event_text)
         try:
@@ -77,10 +78,11 @@ logger.add(splunklogger.splunk_logger)
             self.splunk_logger(event_text)
         return True
 
-def setup_logging(logger_object, debug: bool=True,
-                    level_ljust=None,
+def setup_logging(logger_object: Any,
+                    debug: bool=True,
+                    level_ljust: Optional[str]=None,
                     use_default_loguru: bool=True,
-                    log_sink=sys.stderr,
+                    log_sink: Any=sys.stderr,
                     ) -> None:
     """ does logging configuration
         set use_default_loguru to false to make the format a bit quieter

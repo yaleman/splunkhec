@@ -1,12 +1,15 @@
+#pylint: disable=invalid-name
 """ class for dealing with splunk HTTP event collectors """
 
 from functools import lru_cache
-from loguru import logger
+from typing import Any, Dict, Optional
 from urllib.parse import urlparse
+
+
+from loguru import logger
 import requests
 
 from .utilities import validate_token_format
-from .health import is_healthy
 
 TEST_SOURCETYPE='test_hec_event'
 URI_CACHE_MAXSIZE = 1024
@@ -31,11 +34,11 @@ Response codes
 Status Code 	Description
 200 	HEC is available and accepting input
 400 	Invalid HEC token
-503 	HEC is unhealthy, queues are full 
+503 	HEC is unhealthy, queues are full
 
 """
 STATUS_CODE_MAP = {
-    200 : { 
+    200 : {
         'result' : True,
         'description' : 'HEC is available and accepting input'
     },
@@ -49,16 +52,42 @@ STATUS_CODE_MAP = {
     },
 }
 
-def make_headers(token: str, headers: dict=None ):
+
+def do_get_request(token: str, **kwargs: Any) -> requests.Response:
+    """ does a post request to an endpoint """
+    endpoint = kwargs.get('endpoint', DEFAULT_ENDPOINT)
+    if not kwargs:
+        kwargs = {}
+    if 'uri' in kwargs:
+        uri = kwargs['uri']
+    elif 'server' not in kwargs:
+        raise ValueError("Need to specify one of uri or server+endpoint")
+    else:
+        uri = make_uri(
+            kwargs['server'],
+            endpoint,
+            kwargs.get('secure', True),
+            )
+    headers = make_headers(token, kwargs.get('headers', ""))
+    response = requests.get(uri,
+                             headers=headers,
+                             params=kwargs.get('params'),
+                             )
+    return response
+
+def make_headers(
+    token: str,
+    headers: Optional[Dict[str, Any]]=None,
+    ) -> Dict[str, Any]:
     """ makes some basic headers """
-    if not headers:
+    if headers is None:
         headers = {}
     headers['Authorization'] = f"Splunk {token}"
     # TODO make testing for this
     return headers
 
-@lru_cache(maxsize=URI_CACHE_MAXSIZE)
-def make_uri(server: str, endpoint: str, secure: bool = True):
+# @lru_cache(maxsize=URI_CACHE_MAXSIZE)
+def make_uri(server: str, endpoint: str, secure: bool = True) -> str:
     """ turns things into a useful URI """
     # make sure endpoint has a leading slash
     if not endpoint.startswith("/"):
@@ -74,14 +103,14 @@ def make_uri(server: str, endpoint: str, secure: bool = True):
             server = f"http://{server}"
     elif server.startswith('http://') and secure:
         server = server.replace('http://', 'https://')
-    
+
     if server.endswith(':443') and server.startswith('http://'):
         raise ValueError("Are you sure you want to run HTTP on port 443?")
 
-    elif server.startswith('https://') and not secure:
+    if server.startswith('https://') and not secure:
         raise ValueError("HTTPS specified and secure == False")
-    
-    elif server.startswith("http://") and secure:
+
+    if server.startswith("http://") and secure:
         raise ValueError("HTTPS specified and secure == True")
     uri = f'{server}{endpoint}'
     # check our own work
@@ -94,8 +123,8 @@ class splunkhec():
         based on examples here:
         https://docs.splunk.com/Documentation/Splunk/latest/Data/HECExamples
         """
-    def __init__(self, server: str, **kwargs):
-        """ start up the jam 
+    def __init__(self, server: str, **kwargs: Dict[str, Any]):
+        """ start up the jam
             expected variables
             - server (either the full hostname/port or just the hostname - eg https://example.com:8088 or example.com or example.com:8088)
 
@@ -104,38 +133,55 @@ class splunkhec():
             - secure (bool: use https if true)
             - verbose (bool: how noisy to be)
         """
-        if kwargs.get('token'):
-            if validate_token_format(kwargs.get('token')):
-                self.token = kwargs.get('token')
+        if "token" in kwargs:
+            token = str(kwargs['token'])
+            if validate_token_format(token):
+                self.token =token
         self.server = server
         self.secure = kwargs.get('secure', True)
         self.verbose = kwargs.get('verbose', False)
 
-    def is_healthy(self, verbose: bool = False):
-        """ returns true/false if HEC is healthy """
-        return is_healthy(
-            server=self.server,
-            token=self.token,
-            secure=self.secure,
-            verbose=verbose,
-        )
+    def is_healthy(
+        self,
+        verbose: bool = False,
+        ) -> Any:
+        """
+        if verbose: returns a dict {'result' : bool, 'description' : str}
+        else: returns a bool
+        """
+        validate_token_format(self.token)
 
-    def send_single_event(self, event: dict):
+        uri = make_uri(
+            self.server,
+            "/services/collector/event",
+            bool(self.secure),
+        )
+        headers = {
+            'Authorisation' : f'Splunk {self.token}'
+        }
+        response = do_get_request(token=self.token, uri=uri, headers=headers)
+        if response.status_code not in STATUS_CODE_MAP:
+            raise ValueError(f"Unknown status code returned: {response.status_code} - {response.text}")
+        if verbose:
+            return [response.status_code]
+        return STATUS_CODE_MAP[response.status_code].get('result')
+
+    @classmethod
+    def send_single_event(cls, event: Dict[str, Any]) -> None:
         """ send this a dict and it'll send the event to the server as JSON """
         if not isinstance(event, dict):
             raise TypeError(f"event should be a dict, got: {type(event)}")
         raise NotImplementedError("Haven't done this yet")
 
-    def get_token(self, kwargs_object):
+    def get_token(self, kwargs_object: Dict[str, Any]) -> str:
         """ figures out which token to use """
         if 'token' in kwargs_object:
-            return kwargs_object.get('token')
-        elif 'token' in dir(self):
-            return getattr(self, 'token')
-        else:
-            raise ValueError("Someone forgot to specify a token")
+            return str(kwargs_object['token'])
+        if 'token' in dir(self):
+            return str(getattr(self, 'token'))
+        raise ValueError("Someone forgot to specify a token")
 
-    def send_test_event(self, **kwargs):
+    def send_test_event(self, **kwargs: Dict[str, Any]) -> bool:
         """
         sends a test event to validate that the token works
 
@@ -144,23 +190,33 @@ class splunkhec():
         returns True/False if it worked
         """
         logger.debug(f"sending test event: {kwargs}")
-        
+
         data = {
             'event' : { 'token' : self.get_token(kwargs) },
             'sourcetype' : kwargs.get('sourcetype', TEST_SOURCETYPE),
         }
-        response = self.do_post_request(token=self.get_token(kwargs),
-                                        data=data,
+        response = self.do_post_request(
+            data=data,
         )
         logger.debug(response)
         logger.debug(STATUS_CODE_MAP[response.status_code])
-        return STATUS_CODE_MAP[response.status_code]['result']
+        if response.status_code in STATUS_CODE_MAP:
+            return bool(STATUS_CODE_MAP[response.status_code]['result'])
+        return False
 
-    def do_post_request(self, **kwargs):
+    def do_post_request(
+        self,
+        **kwargs: Dict[str, Any],
+        ) -> requests.Response:
         """ does a post request to an endpoint """
-        endpoint = kwargs.get('endpoint', DEFAULT_ENDPOINT)
-        response = requests.post(url=make_uri(self.server, endpoint=endpoint, secure=self.secure),
-                                 headers=make_headers(kwargs.get('token')),
-                                 json=kwargs.get('data'),
-                                 )
+        endpoint = str(kwargs.get('endpoint', DEFAULT_ENDPOINT))
+        response = requests.post(
+            url=make_uri(
+                self.server,
+                endpoint=endpoint,
+                secure=bool(self.secure),
+                ),
+            headers=make_headers(self.token),
+            json=kwargs.get('data'),
+            )
         return response
