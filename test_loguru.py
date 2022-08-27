@@ -19,7 +19,7 @@ def test_splunklogger() -> None:
                                 token=testconfig.TOKEN,
                                 sourcetype="splunklogger_test",
                                 index_name="test")
-    logger.add(str(splunklogger.splunk_logger))
+    logger.add(splunklogger.splunk_logger)
 
     logger.debug("debug")
     logger.info("info")
