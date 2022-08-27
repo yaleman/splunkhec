@@ -53,7 +53,7 @@ logger.add(splunklogger.splunk_logger)
         payload = kwargs
         if not isinstance(payload['event'], str):
             payload['event'] = str(payload['event'])
-        req = requests.post(url=self.endpoint, json=payload, headers=headers)
+        req = requests.post(url=self.endpoint, json=payload, headers=headers, timeout=30)
         req.raise_for_status()
         return req
 

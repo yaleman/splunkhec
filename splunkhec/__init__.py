@@ -72,6 +72,7 @@ def do_get_request(token: str, **kwargs: Any) -> requests.Response:
     response = requests.get(uri,
                              headers=headers,
                              params=kwargs.get('params'),
+                             timeout=30,
                              )
     return response
 
@@ -221,6 +222,7 @@ class splunkhec():
                 secure=bool(self.secure),
                 ),
             headers=make_headers(self.token),
+            timeout=30,
             json=kwargs.get('data'),
             )
         return response
