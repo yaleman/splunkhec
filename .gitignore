@@ -2,3 +2,4 @@
 testconfig.py
 __pycache__/*
 **/__pycache__/*
+poetry.lock
