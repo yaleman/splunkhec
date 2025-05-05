@@ -110,7 +110,8 @@ def setup_logging(logger_object: Any,
 
     if level_ljust:
         # TODO: I hate this string concatenation, but fstrings...
-        loguru_format = loguru_format.replace('{level}', '{level: <'+level_ljust+'}')
+        if isinstance(level_ljust, str):
+            loguru_format = loguru_format.replace('{level}', '{level: <'+level_ljust+'}')
 
     logger_object.remove()
     logger_object.add(sink=log_sink,
