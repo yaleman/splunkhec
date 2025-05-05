@@ -3,3 +3,15 @@ testconfig.py
 __pycache__/*
 **/__pycache__/*
 poetry.lock
+
+.vscode/
+.DS_Store
+config.py
+dist/
+.env
+.envrc
+*.asc
+build/
+*.pyc
+*.egg-info/
+.venv
